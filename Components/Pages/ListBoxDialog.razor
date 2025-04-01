@@ -1,0 +1,11 @@
+@implements IDialogContentComponent<DialogList<T>>
+@typeparam T
+@using D2LOffice.Models
+
+<FluentListbox Items="@Content.Items" @bind-SelectedOption="@Content.SelectedItem">
+
+</FluentListbox>
+
+@code{
+    [Parameter] public DialogList<T> Content { get; set; }
+}

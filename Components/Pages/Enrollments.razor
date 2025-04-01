@@ -1,0 +1,35 @@
+﻿@page "/"
+@inject NavigationManager navManager
+@using DynamicData.Binding
+@inject Service.Navigation Navigation
+@inherits ReactiveComponentBase<EnrollmentsViewModel>
+
+<h2>Enrollments</h2>
+
+@if (ViewModel != null)
+{
+    <FluentButton Appearance="Appearance.Accent">Click</FluentButton>
+
+    @foreach (var item in ViewModel.Enrollments)
+    {
+        <p>
+            <a href="@($"course/{item.OrgUnit.Id}/{item.OrgUnit.Code}")">@item.OrgUnit.Name</a>
+
+        </p>        
+    }
+
+    @ViewModel.SelectedEnrollmentOrgId
+}
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        
+        ViewModel = new EnrollmentsViewModel(Navigation);
+        ViewModel.Enrollments.WhenAnyPropertyChanged().Subscribe(_ =>
+        {
+            StateHasChanged();
+        });
+    }
+}

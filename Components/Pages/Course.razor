@@ -1,0 +1,317 @@
+@page "/course/{orgUnitId}/{orgStringId}"
+@inject Service.Navigation Navigation
+@inject IDialogService DialogService
+@using D2LOffice.Models
+@using DynamicData.Binding
+@using System.Globalization
+@using System.Reactive.Linq
+@using System.Diagnostics
+@using System.Linq.Expressions
+@using System.Reflection
+@using D2LOffice.Components.DataGrid
+@using ReactiveMarbles.ObservableEvents
+@inherits ReactiveComponentBase<CourseViewModel>
+
+<h2>Course</h2>
+
+@if (ViewModel != null)
+{
+    <FluentOverlay @bind-Visible="@ViewModel.IsSyncing" FullScreen="true" BackgroundColor="#eeeeee" Opacity="0.6" Dismissable="false">
+        <div style="width:60vw;height:200px;padding:50px;background-color:white;">
+            <FluentStack Style="width:100%;" Orientation="Orientation.Horizontal">
+                <FluentProgress Stroke="@ProgressStroke.Large" Value="@(ViewModel.PercentageSynced)" Min="0" Max="100"></FluentProgress>
+                <FluentLabel Typo="Typography.Header">@($"{ViewModel.PercentageSynced}%")</FluentLabel>
+            </FluentStack>
+            <FluentLabel Typo="Typography.Header">@ViewModel.SyncStatus</FluentLabel>
+        </div>
+    </FluentOverlay>
+
+    <FluentButton OnClick="@(()=> ViewModel.AddPlanningItemCommand!.Execute().Subscribe())" Appearance="Appearance.Accent">Add Planning Item</FluentButton>
+    <FluentButton OnClick="@(()=> Navigation.NavigateTo($"/planningcategories/{ViewModel.Enrollment.OrgUnit.Id}"))" Appearance="Appearance.Accent">Edit Categories</FluentButton>
+    <FluentButton OnClick="@(()=> ViewModel.SyncCommand!.Execute().Subscribe())" Appearance="Appearance.Accent">Sync</FluentButton>
+    <FluentButton OnClick="@(()=> ViewModel.ExportToCsvCommand!.Execute().Subscribe())" Appearance="Appearance.Accent">Export to CSV</FluentButton>
+    <FluentButton OnClick="@(()=> ViewModel.ImportFromCsvCommand!.Execute().Subscribe())" Appearance="Appearance.Accent">Import from CSV</FluentButton>
+    <FluentSwitch @bind-Value="@ViewModel.IsEditing">Mass Edit Mode</FluentSwitch>
+
+    @if (ViewModel.IsEditing)
+    {
+        <FluentDataGrid Items="@ViewModel.PlanningItems.AsQueryable()" 
+        MultiLine="true"
+        AutoFit="true" RowSize="@(DataGridRowSize.Medium)">
+            <TemplateColumn Title="Actions">
+                <FluentButton IconEnd="@(new Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.Size16.Delete())" Title="Delete"
+                OnClick="@(() => ViewModel.DeletePlanningItem(context!))" />
+            </TemplateColumn>
+            <TemplateColumn Title="Week Number">
+                @(GetWeekNumber(context!))
+            </TemplateColumn>
+            <TemplateColumn Title="Date" Sortable="true">
+
+                <FluentDatePicker Value="@context!.Date.DateTime" Style="width:150px;"
+                ValueChanged="@(e => {context!.Date = e.Value; ViewModel.UpdatePlanningItem(context!);})" />
+
+                <FluentTimePicker Value="@context!.Date.DateTime"
+                ValueChanged="@(e => {context!.Date = e.Value; ViewModel.UpdatePlanningItem(context!);})" />
+            </TemplateColumn>
+            <TemplateColumn Title="Category">
+                <FluentTextField Value="@context!.Category" @onclick="@(()=>StartListChooser("Category", ViewModel.PlanningCategories.Select(x=>x.Name).ToList(), context!, (x)=>x.Category))" style="width: 100%;"/>
+            </TemplateColumn>
+            <TemplateColumn Title="Calendar">
+                <FluentCheckbox @bind-Value="@context!.AddToCalendar" ></FluentCheckbox>
+
+            </TemplateColumn>
+            <TemplateColumn Title="Title">
+                <FluentTextField Value="@context!.Title" ValueChanged="@(e=>{context!.Title = e; ViewModel?.UpdatePlanningItem(context!);})"  style="width: 100%;"/>
+            </TemplateColumn>
+            <TemplateColumn Title="Description" Class="multiline-text">
+                <FluentTextArea @bind-Value="@context!.Description" 
+                @onclick="@(()=>StartTextEdit(context.Clone() as PlanningItem))" 
+                style="width: 100%; max-height: 200px;"/>
+            </TemplateColumn>
+            <TemplateColumn Title="Type">
+                <FluentTextField Value="@context.Type.ToString()" @onclick="@(()=>StartListChooser<string,string>("Type", PlanningItem.PlanningItemTypes, context!, (x)=>x.Type))" style="width: 100%;"/>
+
+            </TemplateColumn>
+
+            <TemplateColumn Title="Points">
+                <FluentTextField Value="@context.Points.ToString()" ValueChanged="@(e=>{context!.Points = int.Parse(e); ViewModel?.UpdatePlanningItem(context!);})" style="width: 100%;" />
+
+            </TemplateColumn>
+        </FluentDataGrid>
+    }
+    else
+    {
+        <FluentDataGrid 
+        Items="@ViewModel.PlanningItems.AsQueryable()"
+        RowSize="@(DataGridRowSize.Medium)"
+        MultiLine="true"
+        AutoFit="true" >
+            <TemplateColumn Title="Actions" >
+                <FluentButton 
+                IconEnd="@(new Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.Size16.Edit())" 
+                Title="Edit"
+                OnClick="@(() => StartPlanningEdit(context!))" />
+            </TemplateColumn>
+            <PropertyColumn Property="@(c => GetWeekNumber(c))" Title="Week #" Sortable="true" />
+            <PropertyColumn Property="@(c => c.Date.ToString())" Title="Date" Sortable="true" />
+            <PropertyColumn Property="@(c => c.Category)" Sortable="true" >
+                <ColumnOptions>
+                    <ExcelFilter Items="@(ViewModel.UnfilteredPlanningItems)"
+                    Parameter="@(c=> c.Category)"
+                    @bind-SelectedOptions="SelectedCategoryFilters"
+                    />
+                </ColumnOptions>
+            </PropertyColumn>
+            <TemplateColumn Title="Calendar" Sortable="true">
+                <FluentCheckbox Value="@context!.AddToCalendar" ReadOnly="true"></FluentCheckbox>
+            </TemplateColumn>
+            <PropertyColumn Property="@(c => c.Title)" Title="Title" Sortable="true" />
+
+            <TemplateColumn Title="Description" Sortable="true">
+                @((MarkupString)context.Description!)
+            </TemplateColumn>
+            <PropertyColumn Property="@(c => c.Type)" Sortable="true" >
+                <ColumnOptions>
+                    <ExcelFilter Items="@(ViewModel.UnfilteredPlanningItems)"
+                                 Parameter="@(c=> c.Type)"
+                                 @bind-SelectedOptions="SelectedTypeFilters" />
+                </ColumnOptions>
+            </PropertyColumn>
+            <PropertyColumn Property="@(c => c.QuizLink)" />
+            <PropertyColumn Property="@(c => c.Points)" />
+
+        </FluentDataGrid>
+
+    }
+
+
+
+}
+
+
+@code {
+    [Parameter] public required string orgUnitId { get; set; }
+    [Parameter] public required string orgStringId { get; set; }
+
+    private readonly FilterState FilterState = new();
+
+    private DateTimeOffset firstWeekDate = DateTimeOffset.Now;
+
+    private string[]? selectedCategoryFilters = null;
+    public List<string>? SelectedCategoryFilters 
+    { 
+        get => selectedCategoryFilters != null ? selectedCategoryFilters.ToList() : null; 
+        set
+        {
+            if (value != null)
+            {
+                if (selectedCategoryFilters == null || !value.ToHashSet().SetEquals(selectedCategoryFilters))
+                {
+                    ViewModel?.SetCategoryFilterCommand.Execute(value).Subscribe();
+                }
+                selectedCategoryFilters = value.ToArray();
+            }
+            else
+            {
+                selectedCategoryFilters = null;
+            }
+        }
+    } 
+
+    private string[]? selectedTypeFilters = null;
+    public List<string>? SelectedTypeFilters
+    {
+        get => selectedTypeFilters != null ? selectedTypeFilters.ToList() : null;
+        set
+        {
+            if (value != null)
+            {
+                if (selectedTypeFilters == null || !value.ToHashSet().SetEquals(selectedTypeFilters))
+                {
+                    ViewModel?.SetTypeFilterCommand.Execute(value).Subscribe();
+                }
+                selectedTypeFilters = value.ToArray();
+            }
+            else
+            {
+                selectedTypeFilters = null;
+            }
+        }
+    }
+
+    protected override void OnInitialized()
+    {        
+        ViewModel = new CourseViewModel(Navigation, orgUnitId, orgStringId);
+        ViewModel.PlanningItems.WhenAnyPropertyChanged().Subscribe(_ =>
+        {
+            StateHasChanged();
+        });
+
+        ViewModel.MinimumObs.Subscribe(firstWeekDate =>
+        {
+            this.firstWeekDate = firstWeekDate;
+            StateHasChanged();
+        });
+
+    }
+
+    
+
+    private async void StartListChooser<T, T2>(string title, List<T> itemsToChooseFrom, PlanningItem item, Expression<Func<PlanningItem, T2>> selector)
+    {
+        await DialogService.ShowDialogAsync<ListBoxDialog<T>>(new DialogList<T> { Items = itemsToChooseFrom }, new DialogParameters()
+            {
+                Title = title,
+                OnDialogResult = DialogService.CreateDialogCallback(this, (x) => HandleListChooserDialog<T, T2>(x, item, selector)),
+                PrimaryAction = "Save",
+                PrimaryActionEnabled = true,
+                SecondaryAction = "Discard Changes",
+                Width = "500px",
+                Height = "500px",
+                TrapFocus = true,
+                Modal = false,
+            });
+    }
+    private Task HandleListChooserDialog<T, T2>(DialogResult result, PlanningItem item, Expression<Func<PlanningItem, T2>> selector)
+    {
+        if (result.Cancelled)
+        {
+            //await Task.Run(() => Debug.WriteLine($"Dialog cancelled"));
+            return Task.CompletedTask;
+        }
+        if (result.Data is not null)
+        {
+            DialogList<T>? listObj = result.Data as DialogList<T>;
+            var prop = (PropertyInfo)((MemberExpression)selector.Body).Member;
+            prop.SetValue(item, listObj.SelectedItem);
+            ViewModel?.UpdatePlanningItem(item);
+            return Task.CompletedTask;
+        }
+
+        return Task.CompletedTask;
+
+        //await Task.Run(() => Debug.WriteLine($"Dialog closed"));
+    }
+
+    private async void StartTextEdit(PlanningItem item)
+    {
+        await DialogService.ShowDialogAsync<HtmlEditorDialog>(new DialogString { Text = item.Description }, new DialogParameters()
+            {
+                Title = "Description",
+                OnDialogResult = DialogService.CreateDialogCallback(this, (x) => HandleTextDialog(x, item)),
+                PrimaryAction = "Save",
+                PrimaryActionEnabled = true,
+                SecondaryAction = "Discard Changes",
+                Width = "60vw",
+                Height = "80vh",
+                TrapFocus = true,
+                Modal = false,
+            });
+    }
+    private Task HandleTextDialog(DialogResult result, PlanningItem item)
+    {
+        if (result.Cancelled)
+        {
+            //await Task.Run(() => Debug.WriteLine($"Dialog cancelled"));
+            return Task.CompletedTask;
+        }
+        if (result.Data is not null)
+        {
+            DialogString? description = result.Data as DialogString;
+            item.Description = description!.Text;
+            ViewModel?.UpdatePlanningItem(item);
+
+            return Task.CompletedTask;
+        }
+
+        return Task.CompletedTask;
+
+        //await Task.Run(() => Debug.WriteLine($"Dialog closed"));
+    }
+
+    private async void StartPlanningEdit(PlanningItem item)
+    {
+        await DialogService.ShowDialogAsync<PlanningEditDialog>((item.Clone() as PlanningItem, ViewModel), new
+        DialogParameters()
+            {
+                Title = $"{item.Title}",
+                OnDialogResult = DialogService.CreateDialogCallback(this, HandlePlanningDialog),
+                PrimaryAction = "Save",
+                PrimaryActionEnabled = true,
+                SecondaryAction = "Discard Changes",
+                Width = "60vw",
+                Height = "80vh",
+                TrapFocus = true,
+                Modal = false,
+            });
+    }
+    private Task HandlePlanningDialog(DialogResult result)
+    {
+        if (result.Cancelled)
+        {
+            //await Task.Run(() => Debug.WriteLine($"Dialog cancelled"));
+            return Task.CompletedTask;
+        }
+        if (result.Data is not null)
+        {
+            (PlanningItem, CourseViewModel)? item = result.Data as (PlanningItem, CourseViewModel)?;
+            ViewModel?.UpdatePlanningItem(item!.Value.Item1);
+            // await Task.Run(() => Debug.WriteLine($"Dialog closed by {item?.Title}"));
+            return Task.CompletedTask;
+        }
+        return Task.CompletedTask;
+        //await Task.Run(() => Debug.WriteLine($"Dialog closed"));
+    }
+
+    int GetWeekNumber(PlanningItem item)
+    {
+        CultureInfo cultureInfo = CultureInfo.CurrentCulture;
+        Calendar calendar = cultureInfo.Calendar;
+        CalendarWeekRule calendarWeekRule = cultureInfo.DateTimeFormat.CalendarWeekRule;
+        DayOfWeek firstDayOfWeek = cultureInfo.DateTimeFormat.FirstDayOfWeek;
+        int weekNumber = calendar.GetWeekOfYear(firstWeekDate.DateTime, calendarWeekRule, firstDayOfWeek);
+        int currentWeekNumber = calendar.GetWeekOfYear(item.Date.DateTime, calendarWeekRule, firstDayOfWeek);
+        return currentWeekNumber - weekNumber + 1;
+        //return Task.FromResult("Week 1");
+    }
+}

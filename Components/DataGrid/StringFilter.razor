@@ -1,0 +1,117 @@
+﻿@using Microsoft.FluentUI.AspNetCore.Components
+
+@inherits FluentComponentBase
+
+<div class="filter-container">
+    <FluentGrid Justify="JustifyContent.Center">
+        <FluentGridItem xs="12">
+            <FluentLabel Typo="Typography.Body">Filter Operator:</FluentLabel>
+            <FilterOperatorSelector FilterOperators="filterOperatorOptions" @bind-FilterOperator="_filterOperator"></FilterOperatorSelector>
+        </FluentGridItem>
+        <FluentGridItem xs="12">
+            <FluentLabel Typo="Typography.Body">Value:</FluentLabel>
+            <FluentTextField @bind-Value="_value" Disabled="IsValueDisabled()" Class="w-100"></FluentTextField>
+        </FluentGridItem>
+        <FluentGridItem xs="6">
+            <FluentButton Class="w-100" Appearance="Appearance.Neutral" OnClick="@(async () => await RemoveFilterAsync())">Reset</FluentButton>
+        </FluentGridItem>
+        <FluentGridItem xs="6">
+            <FluentButton Class="w-100" Appearance="Appearance.Accent" OnClick="@(async () => await ApplyFilterAsync())">Apply</FluentButton>
+        </FluentGridItem>
+    </FluentGrid>
+</div>
+
+
+@code {
+    /// <summary>
+    /// The Property Name.
+    /// </summary>
+    [Parameter]
+    public required string PropertyName { get; set; }
+
+    /// <summary>
+    /// The current FilterState.
+    /// </summary>
+    [Parameter]
+    public required FilterState FilterState { get; set; }
+
+    /// <summary>
+    /// Filter Options available for the String Filter.
+    /// </summary>
+    private readonly FilterOperatorEnum[] filterOperatorOptions = new[]
+    {
+            FilterOperatorEnum.IsEmpty,
+            FilterOperatorEnum.IsNotEmpty,
+            FilterOperatorEnum.IsNull,
+            FilterOperatorEnum.IsNotNull,
+            FilterOperatorEnum.IsEqualTo,
+            FilterOperatorEnum.IsNotEqualTo,
+            FilterOperatorEnum.Contains,
+            FilterOperatorEnum.NotContains,
+            FilterOperatorEnum.StartsWith,
+            FilterOperatorEnum.EndsWith,
+        };
+
+    private bool IsValueDisabled()
+    {
+        return _filterOperator == FilterOperatorEnum.None
+            || _filterOperator == FilterOperatorEnum.IsNull
+            || _filterOperator == FilterOperatorEnum.IsNotNull;
+    }
+
+    protected string? _value { get; set; }
+
+    protected FilterOperatorEnum _filterOperator { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        SetFilterValues();
+    }
+
+    private void SetFilterValues()
+    {
+        if (!FilterState.Filters.TryGetValue(PropertyName, out var filterDescriptor))
+        {
+            _filterOperator = FilterOperatorEnum.None;
+            _value = null;
+
+            return;
+        }
+
+        var stringFilterDescriptor = filterDescriptor as StringFilterDescriptor;
+
+        if (stringFilterDescriptor == null)
+        {
+            _filterOperator = FilterOperatorEnum.None;
+            _value = null;
+
+            return;
+        }
+
+        _filterOperator = stringFilterDescriptor.FilterOperator;
+        _value = stringFilterDescriptor.Value;
+    }
+
+    protected virtual Task ApplyFilterAsync()
+    {
+        var stringFilter = new StringFilterDescriptor
+            {
+                PropertyName = PropertyName,
+                FilterOperator = _filterOperator,
+                Value = _value
+            };
+
+        return FilterState.AddFilterAsync(stringFilter);
+    }
+
+    protected virtual async Task RemoveFilterAsync()
+    {
+        _filterOperator = FilterOperatorEnum.None;
+        _value = null;
+
+        await FilterState.RemoveFilterAsync(PropertyName);
+    }
+}
+}

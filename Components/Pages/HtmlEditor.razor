@@ -1,0 +1,57 @@
+﻿@using Syncfusion.Blazor.RichTextEditor
+
+<SfRichTextEditor @ref="editorRef" @bind-Value="@Value" SaveInterval="0" AutoSaveOnIdle="false">
+    <RichTextEditorToolbarSettings Items="@Tools">
+        <RichTextEditorCustomToolbarItems>
+            <RichTextEditorCustomToolbarItem Name="Symbol">
+                <Template>
+                    <FluentButton OnClick="InsertD2LLinkAsync">Ω</FluentButton>
+                </Template>
+            </RichTextEditorCustomToolbarItem>
+        </RichTextEditorCustomToolbarItems>
+    </RichTextEditorToolbarSettings>
+</SfRichTextEditor>
+
+
+
+
+@code {
+    SfRichTextEditor? editorRef;
+    private List<ToolbarItemModel> Tools = new List<ToolbarItemModel>()
+    {
+        new ToolbarItemModel() { Command = ToolbarCommand.Bold },
+        new ToolbarItemModel() { Command = ToolbarCommand.Italic },
+        new ToolbarItemModel() { Command = ToolbarCommand.Underline },
+        new ToolbarItemModel() { Command = ToolbarCommand.Separator },
+        new ToolbarItemModel() { Name = "Symbol", TooltipText = "Insert Symbol" },
+        new ToolbarItemModel() { Command = ToolbarCommand.SourceCode },
+        new ToolbarItemModel() { Command = ToolbarCommand.FullScreen }
+    };
+
+    private string _value = default!;
+
+    [Parameter]
+    public string Value
+    {
+        get => _value;
+        set
+        {
+            if (_value == value) return;
+            _value = value;
+            ValueChanged.InvokeAsync(value);
+        }
+    }
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    private async Task InsertD2LLinkAsync()
+    {
+        if (editorRef != null)
+        {
+            // RichTextEditorRef.Selection
+            await editorRef.ExecuteCommandAsync(CommandName.InsertHTML, "<div>Syncfusion Rich Text Editor</div>");
+        }
+    }
+
+}

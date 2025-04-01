@@ -1,0 +1,115 @@
+﻿@using System.Linq.Expressions
+@typeparam TItem
+@inherits FluentComponentBase
+
+
+@if (Options != null)
+{
+    <FluentStack Orientation="Orientation.Vertical">
+        @foreach (var option in Options)
+        {
+            <FluentCheckbox 
+            ValueChanged="(val)=>ValueChanged(option,val)" 
+            Value="@(SelectedOptions.Contains(option))">
+                @option
+            </FluentCheckbox>
+        }
+    </FluentStack>
+
+}
+
+@code {
+    // List<string> Items { get; set; } = new List<string>();
+
+    [Parameter] public required IEnumerable<TItem> Items { get; set; }
+    [Parameter] public required Expression<Func<TItem, string>> Parameter { get; set; }
+
+    [Parameter] public List<string> SelectedOptions { get; set; } = new List<string>();
+
+    [Parameter] public EventCallback<List<string>> SelectedOptionsChanged { get; set; }
+
+    public List<string> Options { get; set; } = new List<string>();
+
+    private bool firstTime = true;
+
+    protected override void OnInitialized()
+    {
+        // Items.Add("A");
+        // Items.Add("B");
+        // Items.Add("C");
+        // Items.Add("D");
+        base.OnInitialized();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (firstTime)
+        {
+            firstTime = false;
+            if (Items != null)
+            {
+                var func = Parameter.Compile();
+                Options = Items.Select(x => func(x)).Distinct().ToList();
+                Options.Insert(0, "(Select All)");
+
+                if (SelectedOptions == null)
+                {
+                    SelectedOptions = new List<string>(Options);
+                    await SelectedOptionsChanged.InvokeAsync(SelectedOptions);
+                }
+            }
+        }
+        await base.OnParametersSetAsync();
+    }
+
+    private async Task ValueChanged(string option, bool val)
+    {
+        if (option == "(Select All)")
+        {
+            SelectedOptions.Clear();
+            if (val)
+            {               
+                SelectedOptions.AddRange(Options);
+            }
+            await SelectedOptionsChanged.InvokeAsync(SelectedOptions);
+        }
+        else
+        {
+            if (val)
+            {
+
+                if (!SelectedOptions.Contains(option))
+                {
+                    SelectedOptions.Add(option);
+                    SelectAllCheck();
+                    await SelectedOptionsChanged.InvokeAsync(SelectedOptions);
+                }
+            }
+            else
+            {
+                if (SelectedOptions.Contains(option))
+                {
+                    SelectedOptions.Remove(option);
+                    SelectAllCheck();
+                    await SelectedOptionsChanged.InvokeAsync(SelectedOptions);
+                }
+            }
+        }
+    }
+
+    private void SelectAllCheck()
+    {
+        var options = Options.Where(x => x != "(Select All)").ToList();
+        var selectedOptions = SelectedOptions.Where(x => x != "(Select All)").ToList();
+        if (options.ToHashSet().SetEquals(selectedOptions))
+        {
+            //SelectedOptions.Clear();
+            SelectedOptions.Add("(Select All)");
+        }
+        else
+        {
+            //SelectedOptions.Clear();
+            SelectedOptions.Remove("(Select All)");
+        }
+    }
+}

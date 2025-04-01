@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<rxui:ReactiveContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+              x:TypeArguments="vm:RootViewModel"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:view="clr-namespace:D2LOffice.ViewModel"
+             xmlns:vm="clr-namespace:D2LOffice.ViewModel"
+                          xmlns:comp="clr-namespace:D2LOffice.Components"
+             x:Class="D2LOffice.View.RootPage"
+                          xmlns:local="clr-namespace:D2LOffice"
+              xmlns:rxui="clr-namespace:ReactiveUI.Maui;assembly=ReactiveUI.Maui"
+                        x:DataType="vm:RootViewModel"
+                          Shell.NavBarIsVisible="False" 
+              Title="">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Settings" Command="{Binding NavigateToSettingsCommand}" IconImageSource="ic_fluent_settings_24_filled.png" />
+
+
+
+    </ContentPage.ToolbarItems>
+    <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
+        <BlazorWebView.RootComponents>
+            <RootComponent Selector="#app" ComponentType="{x:Type comp:Routes}" />
+        </BlazorWebView.RootComponents>
+    </BlazorWebView>
+</rxui:ReactiveContentPage>

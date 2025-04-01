@@ -1,0 +1,2 @@
+﻿FROM https://www.bytefish.de/blog/blazor_fluentui_and_odata.html#blazor-filter-components
+

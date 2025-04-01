@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<rxui:ReactiveContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="D2LOffice.View.SettingsView"
+             xmlns:view="clr-namespace:D2LOffice.ViewModel"
+             xmlns:vm="clr-namespace:D2LOffice.ViewModel"
+             xmlns:rxui="clr-namespace:ReactiveUI.Maui;assembly=ReactiveUI.Maui"
+                          x:TypeArguments="vm:SettingsViewModel"
+                          x:DataType="vm:SettingsViewModel"
+             >
+    
+    <VerticalStackLayout>
+        <Button Text="Force Logout" 
+                HorizontalOptions="Start"
+                Command="{Binding ForceLogoutCommand}"/>
+
+        <Label Text="LMS Type"/> 
+        <Picker x:Name="servicePicker" ItemsSource="{Binding ServiceItems}" SelectedItem="{Binding SelectedService, Mode=TwoWay}"/>
+        <Label Text="Domain"/>
+        <Entry x:Name="domain" Text="{Binding Domain, Mode=TwoWay}"/>
+        <Label Text="Username"/>
+        <Entry x:Name="username" Text="{Binding Username, Mode=TwoWay}"/>
+        <Label Text="Password" />
+        <Entry IsPassword="True" x:Name="password" Text="{Binding Password, Mode=TwoWay}"/>
+    </VerticalStackLayout>
+</rxui:ReactiveContentPage>

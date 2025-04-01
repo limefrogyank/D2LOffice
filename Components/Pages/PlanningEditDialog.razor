@@ -1,0 +1,101 @@
+﻿@using D2LOffice.Models
+@using D2LOffice.Service
+@using Syncfusion.Blazor.RichTextEditor
+@inject IDialogService DialogService
+@implements IDialogContentComponent<(PlanningItem, CourseViewModel)>
+
+<FluentDialogBody>
+    <FluentBodyContent>
+        <FluentStack Style="padding:10px;">
+            <FluentDatePicker Value="@Content!.Item1.Date.DateTime" ValueChanged="@(e => {Content!.Item1.Date = e.Value; })">Date
+            </FluentDatePicker>
+            <FluentTimePicker Value="@Content!.Item1.Date.DateTime" ValueChanged="@(e => {Content!.Item1.Date = e.Value; })">Time
+            </FluentTimePicker>
+        </FluentStack>
+        <FluentStack 
+            Orientation="Orientation.Vertical" 
+            Style="padding:10px;" 
+            HorizontalAlignment="HorizontalAlignment.Stretch" >
+            <div style="display:flex;flex-direction:column;">
+                <FluentSelect Items="@Content.Item2.PlanningCategories" 
+                    Label="Category"
+                    @bind-Value="@Content.Item1.Category"
+                    OptionText="@(d=>d.Name)" 
+                    OptionValue="@(d=>d.Name)"></FluentSelect>
+            </div>
+            <div style="display:flex;flex-direction:column;margin:5px;">
+                 <FluentCheckbox @bind-Value="@Content.Item1.AddToCalendar" Label="AddToCalendar"></FluentCheckbox>
+            </div>
+            <div style="display:flex;flex-direction:column;">
+                <FluentTextField @bind-Value="@Content.Item1.Title">Title</FluentTextField>
+            </div>
+            <div style="display:flex;flex-direction:column;">
+                <HtmlEditor @bind-Value="@Content.Item1.Description" />
+            </div>
+            <div style="display:flex;flex-direction:column;">
+                <FluentSelect Items="@(PlanningItem.PlanningItemTypes)"
+                    OptionText="@(d=>d)" 
+                    OptionValue="@(d=> d)"
+                    Value="@Content.Item1.Type.ToString()"
+                    ValueChanged="@(e => {Content.Item1.Type = e; })" Label="Type" lab />
+            </div>
+            <div style="display:flex;flex-direction:column;">
+                <FluentTextField Value="@Content.Item1.Points.ToString()" ValueChanged="@(v=> Content.Item1.Points = int.Parse(v))">Points</FluentTextField>
+            </div>
+        </FluentStack>
+    </FluentBodyContent>
+</FluentDialogBody>
+
+@code {
+
+    [Parameter]
+    public (PlanningItem,CourseViewModel) Content { get; set; } = default!;
+
+    [CascadingParameter]
+    public FluentDialog? Dialog { get; set; }
+
+    override protected void OnInitialized()
+    {
+        
+    }
+
+    private void ToggleDialogPrimaryActionButton(bool enable)
+    {
+        Dialog!.TogglePrimaryActionButton(enable);
+    }
+
+    private async void StartTextEdit(PlanningItem item)
+    {
+        await DialogService.ShowDialogAsync<HtmlEditorDialog>(new DialogString {Text = item.Description}, new DialogParameters()
+            {
+                Title = "Description",
+                OnDialogResult = DialogService.CreateDialogCallback(this, (x)=>HandleTextDialog(x,item)),
+                PrimaryAction = "Save",
+                PrimaryActionEnabled = true,
+                SecondaryAction = "Discard Changes",
+                Width = "500px",
+                Height = "500px",
+                TrapFocus = true,
+                Modal = false,
+            });
+    }
+    private Task HandleTextDialog(DialogResult result, PlanningItem item)
+    {
+        if (result.Cancelled)
+        {
+            //await Task.Run(() => Debug.WriteLine($"Dialog cancelled"));
+            return Task.CompletedTask;
+        }
+        if (result.Data is not null)
+        {
+            DialogString? description = result.Data as DialogString;
+            item.Description = description!.Text;            
+            return Task.CompletedTask;
+        }
+
+        return Task.CompletedTask;
+
+        //await Task.Run(() => Debug.WriteLine($"Dialog closed"));
+    }
+
+}    

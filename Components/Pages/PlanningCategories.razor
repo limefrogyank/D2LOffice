@@ -1,0 +1,101 @@
+@page "/planningcategories/{orgUnitId}"
+@inject NavigationManager navManager
+@inject IDialogService DialogService
+@using D2LOffice.Models
+@using DynamicData
+@using DynamicData.Binding
+@inherits ReactiveComponentBase<PlanningCategoriesViewModel>
+
+@if (ViewModel != null)
+{
+    <FluentButton Appearance="Appearance.Accent" OnClick="@(()=>ViewModel.AddPlanningCategory())">Add Planning Category</FluentButton>
+    <FluentSortableList Handle="true" Fallback="true" Items="@ViewModel.PlanningCategories" OnUpdate="@SortList" 
+        Style="--fluent-sortable-list-item-height: 80px;">
+        <ItemTemplate>
+            <div class="sortable-grab">
+                <FluentIcon Value="@(new Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.Size20.ArrowSort())" />
+            </div>
+            <div class="sortable-item-content" style="flex-grow: 1;height:50px;">
+               
+                <FluentTextField @bind-Value="@context.Name">Name</FluentTextField>
+                <FluentTextField @bind-Value="@context.Description" onclick="@(()=>StartEdit(context))">Description</FluentTextField>
+                <FluentButton OnClick="@(_ =>ViewModel.DeleteCommand.Execute(context).Subscribe())" >Delete</FluentButton>
+            </div>
+        </ItemTemplate>
+    </FluentSortableList>
+
+}
+
+@code {
+    [Parameter] public required string orgUnitId { get; set; }
+
+    private void SortList(FluentSortableListEventArgs args)
+    {
+        if (args is null || args.OldIndex == args.NewIndex)
+        {
+            return;
+        }
+
+        var oldIndex = args.OldIndex;
+        var newIndex = args.NewIndex;
+
+        var items = ViewModel!.PlanningCategories;
+        var itemToMove = items[oldIndex];
+        items.Remove(new[] { itemToMove });
+
+        if (newIndex < items.Count)
+        {
+            items.Insert(newIndex, itemToMove);
+        }
+        else
+        {
+            items.Add(itemToMove);
+        }
+    }
+
+private async void StartEdit(PlanningCategory category)
+    {
+        await DialogService.ShowDialogAsync<HtmlEditorDialog>(new DialogString {Text = category.Description}, new DialogParameters()
+            {
+                Title = "Description",
+                OnDialogResult = DialogService.CreateDialogCallback(this, (x)=>HandleDialog(x,category)),
+                PrimaryAction = "Save",
+                PrimaryActionEnabled = true,
+                SecondaryAction = "Discard Changes",
+                Width = "500px",
+                Height = "500px",
+                TrapFocus = true,
+                Modal = false,
+            });
+    }
+    private Task HandleDialog(DialogResult result, PlanningCategory category)
+    {
+        if (result.Cancelled)
+        {
+            //await Task.Run(() => Debug.WriteLine($"Dialog cancelled"));
+            return Task.CompletedTask;
+        }
+        if (result.Data is not null)
+        {
+            DialogString? description = result.Data as DialogString;
+            category.Description = description!.Text;
+            ViewModel?.UpdatePlanningCategory();
+            //ViewModel?.UpdatePlanningCategory(category);
+            // await Task.Run(() => Debug.WriteLine($"Dialog closed by {item?.Title}"));
+            return Task.CompletedTask;
+        }
+
+        return Task.CompletedTask;
+
+        //await Task.Run(() => Debug.WriteLine($"Dialog closed"));
+    }
+    protected override void OnInitialized()
+    {
+        ViewModel = new PlanningCategoriesViewModel(navManager, orgUnitId);
+        ViewModel.PlanningCategories.WhenAnyPropertyChanged().Subscribe(_ =>
+        {
+            StateHasChanged();
+        });
+    }
+
+}

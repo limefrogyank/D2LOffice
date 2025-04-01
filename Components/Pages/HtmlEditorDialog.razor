@@ -1,0 +1,63 @@
+@using D2LOffice.Models
+@implements IDialogContentComponent<DialogString>
+@using Syncfusion.Blazor.RichTextEditor
+
+<HtmlEditor @bind-Value="@Content.Text" />
+
+@* <SfRichTextEditor @ref="editorRef" @bind-Value="@Content.Text" SaveInterval="0" AutoSaveOnIdle="false">
+    <RichTextEditorToolbarSettings Items="@Tools">
+        <RichTextEditorCustomToolbarItems>
+            <RichTextEditorCustomToolbarItem Name="Symbol">
+                <Template>
+                    <FluentButton OnClick="InsertD2LLinkAsync">Ω</FluentButton>
+                </Template>
+            </RichTextEditorCustomToolbarItem>
+        </RichTextEditorCustomToolbarItems>
+    </RichTextEditorToolbarSettings>
+</SfRichTextEditor>
+ *@
+   
+
+
+@code {
+    // SfRichTextEditor? editorRef;
+    // private List<ToolbarItemModel> Tools = new List<ToolbarItemModel>()
+    // {
+    //     new ToolbarItemModel() { Command = ToolbarCommand.Bold },
+    //     new ToolbarItemModel() { Command = ToolbarCommand.Italic },
+    //     new ToolbarItemModel() { Command = ToolbarCommand.Underline },
+    //     new ToolbarItemModel() { Command = ToolbarCommand.Separator },
+    //     new ToolbarItemModel() { Name = "Symbol", TooltipText = "Insert Symbol" },
+    //     new ToolbarItemModel() { Command = ToolbarCommand.SourceCode },
+    //     new ToolbarItemModel() { Command = ToolbarCommand.FullScreen }
+    // };
+    private void ClickHandler()
+    {
+        //Perform your action here
+    }
+    
+    [Parameter]
+    public DialogString Content { get; set; } = default!;
+
+    [CascadingParameter]
+    public FluentDialog? Dialog { get; set; }
+
+    protected override void OnInitialized()
+    {
+        
+    }
+
+
+    // private async Task InsertD2LLinkAsync()
+    // {
+    //     if (editorRef!=null){
+    //        // RichTextEditorRef.Selection
+    //        await editorRef.ExecuteCommandAsync(CommandName.InsertHTML,"<div>Syncfusion Rich Text Editor</div>");
+    //     }
+    // }
+
+    private void ToggleDialogPrimaryActionButton(bool enable)
+    {
+        Dialog!.TogglePrimaryActionButton(enable);
+    }
+}
