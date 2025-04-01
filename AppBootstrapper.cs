@@ -81,10 +81,10 @@ namespace D2LOffice
                             .NavigateAndReset
                             .Execute(new RootViewModel())
                             .Subscribe();
-                        //router
-                        //    .Navigate
-                        //    .Execute(new RootViewModel())
-                        //    .Subscribe();
+                        router
+                            .Navigate
+                            .Execute(new RootViewModel())
+                            .Subscribe();
                     }
                 }
                 else
@@ -102,10 +102,10 @@ namespace D2LOffice
                             .NavigateAndReset
                             .Execute(new WebViewViewModel())
                             .Subscribe();
-                        //router
-                        //    .Navigate
-                        //    .Execute(new WebViewViewModel())
-                        //    .Subscribe();
+                        router
+                            .Navigate
+                            .Execute(new WebViewViewModel())
+                            .Subscribe();
                     }
                 }
             });
