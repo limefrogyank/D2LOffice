@@ -12,6 +12,8 @@ Why is this necessary?  I wanted something where I could change a few dates in O
 
 While I use D2L myself, there's no reason this couldn't work with other LMS's.  While it's not currently setup as a generic interface, that's something that I tried to keep in mind when designing the app. 
 
+FYI, this does *not* require an API key for D2L.  This app will login to D2L using *your* credentials (entered into the setup screen) and will grab the temporary API key that the webpage client uses for changing backend stuff.  A WebView was required for this to happen, hence the MAUI native part of the app.  The rest of it is written using Blazor so that HTML renders nicely without having to have multiple WebViews.
+
 ![image](https://github.com/user-attachments/assets/f5d22f10-c29f-446e-b687-a31c39de3c52)
 
 ![image](https://github.com/user-attachments/assets/3ddb4835-7417-481d-bcd9-507011d4a308)
