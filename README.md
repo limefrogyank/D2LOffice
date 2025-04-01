@@ -13,3 +13,5 @@ Why is this necessary?  I wanted something where I could change a few dates in O
 While I use D2L myself, there's no reason this couldn't work with other LMS's.  While it's not currently setup as a generic interface, that's something that I tried to keep in mind when designing the app. 
 
 ![image](https://github.com/user-attachments/assets/f5d22f10-c29f-446e-b687-a31c39de3c52)
+
+![image](https://github.com/user-attachments/assets/11fd7a1e-43d5-4db0-af1c-385bb622f78e)
